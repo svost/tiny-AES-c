@@ -217,7 +217,7 @@ void AES_init_ctx(struct AES_ctx* ctx, const uint8_t* key)
 {
   KeyExpansion(ctx->RoundKey, key);
 }
-#if (defined(CBC) && (CBC == 1)) || (defined(CTR) && (CTR == 1))
+#if (defined(CTR) && (CTR == 1))
 void AES_init_ctx_iv(struct AES_ctx* ctx, const uint8_t* key, const uint8_t* iv)
 {
   KeyExpansion(ctx->RoundKey, key);
@@ -332,7 +332,7 @@ static uint8_t Multiply(uint8_t x, uint8_t y)
 
 #endif
 
-#if (defined(CBC) && CBC == 1) || (defined(ECB) && ECB == 1)
+#if (defined(ECB) && ECB == 1)
 // MixColumns function mixes the columns of the state matrix.
 // The method used to multiply may be difficult to understand for the inexperienced.
 // Please use the references to gain more information.
@@ -396,7 +396,7 @@ static void InvShiftRows(state_t* state)
   (*state)[2][3] = (*state)[3][3];
   (*state)[3][3] = temp;
 }
-#endif // #if (defined(CBC) && CBC == 1) || (defined(ECB) && ECB == 1)
+#endif // #if (defined(ECB) && ECB == 1)
 
 // Cipher is the main function that encrypts the PlainText.
 static void Cipher(state_t* state, const uint8_t* RoundKey)
@@ -424,7 +424,7 @@ static void Cipher(state_t* state, const uint8_t* RoundKey)
   AddRoundKey(Nr, state, RoundKey);
 }
 
-#if (defined(CBC) && CBC == 1) || (defined(ECB) && ECB == 1)
+#if (defined(ECB) && ECB == 1)
 static void InvCipher(state_t* state, const uint8_t* RoundKey)
 {
   uint8_t round = 0;
@@ -448,7 +448,7 @@ static void InvCipher(state_t* state, const uint8_t* RoundKey)
   }
 
 }
-#endif // #if (defined(CBC) && CBC == 1) || (defined(ECB) && ECB == 1)
+#endif // #if (defined(ECB) && ECB == 1)
 
 /*****************************************************************************/
 /* Public functions:                                                         */
@@ -471,53 +471,6 @@ void AES_ECB_decrypt(const struct AES_ctx* ctx, uint8_t* buf)
 
 #endif // #if defined(ECB) && (ECB == 1)
 
-
-
-
-
-#if defined(CBC) && (CBC == 1)
-
-
-static void XorWithIv(uint8_t* buf, const uint8_t* Iv)
-{
-  uint8_t i;
-  for (i = 0; i < AES_BLOCKLEN; ++i) // The block in AES is always 128bit no matter the key size
-  {
-    buf[i] ^= Iv[i];
-  }
-}
-
-void AES_CBC_encrypt_buffer(struct AES_ctx *ctx, uint8_t* buf, uint32_t length)
-{
-  uintptr_t i;
-  uint8_t *Iv = ctx->Iv;
-  for (i = 0; i < length; i += AES_BLOCKLEN)
-  {
-    XorWithIv(buf, Iv);
-    Cipher((state_t*)buf, ctx->RoundKey);
-    Iv = buf;
-    buf += AES_BLOCKLEN;
-  }
-  /* store Iv in ctx for next call */
-  memcpy(ctx->Iv, Iv, AES_BLOCKLEN);
-}
-
-void AES_CBC_decrypt_buffer(struct AES_ctx* ctx, uint8_t* buf,  uint32_t length)
-{
-  uintptr_t i;
-  uint8_t storeNextIv[AES_BLOCKLEN];
-  for (i = 0; i < length; i += AES_BLOCKLEN)
-  {
-    memcpy(storeNextIv, buf, AES_BLOCKLEN);
-    InvCipher((state_t*)buf, ctx->RoundKey);
-    XorWithIv(buf, ctx->Iv);
-    memcpy(ctx->Iv, storeNextIv, AES_BLOCKLEN);
-    buf += AES_BLOCKLEN;
-  }
-
-}
-
-#endif // #if defined(CBC) && (CBC == 1)
 
 
 
